@@ -15,26 +15,55 @@ type UserListProps = {
 
 export default function UserList({ onEdit }: UserListProps) {
   const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState<boolean>(true); // Loading state
+  const [error, setError] = useState<string | null>(null); // Error state
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const res = await fetch('/api/getUsers');
-      const data: User[] = await res.json();
-      setUsers(data);
+      try {
+        const res = await fetch('/api/getUsers');
+        if (!res.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data: User[] = await res.json();
+        if (Array.isArray(data)) {
+          setUsers(data);
+        } else {
+          console.error('Unexpected data format:', data);
+          setError('Failed to load users');
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        setError('Failed to load users');
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchUsers();
   }, []);
 
   const handleDelete = async (id: number) => {
-    await fetch('/api/deleteUser', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
+    try {
+      const res = await fetch('/api/deleteUser', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
 
-    setUsers(users.filter(user => user.id !== id));
+      if (!res.ok) {
+        throw new Error('Failed to delete user');
+      }
+
+      setUsers(users.filter(user => user.id !== id));
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setError('Failed to delete user');
+    }
   };
+
+  if (loading) return <div>Loading...</div>; // Show loading message
+  if (error) return <div>{error}</div>; // Show error message
 
   return (
     <ul className="user-list">

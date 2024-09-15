@@ -10,6 +10,7 @@ export async function GET() {
 
     return NextResponse.json(users);
   } catch (error) {
+    console.error('Error fetching users:', error); // Log error details
     return NextResponse.json({ error: 'Error fetching users' }, { status: 500 });
   }
 }
